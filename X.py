@@ -1,17 +1,41 @@
+import os
 import tweepy
 import requests
 import time
 
-# X API setup
-client = tweepy.Client(bearer_token='AAAAAAAAAAAAAAAAAAAAAOio5gEAAAAAEzwCsA%2B74hk81TVueBsSNW%2Bwa%2Fo%3D7GyzbyCZHwJHSpwu90eqQjkoyRdqDLBSATAHVCpnEJw35AzXp4')
-discord_webhook = 'https://discord.com/api/webhooks/1443599784324890655/ps20oZhs-k7O5Qs7g5HLpaArSokeSzE2ftVZS4rLi8CKF2thpeGrH1_tgZUe_lR2vIQ6'
-user_id = client.get_user(username='BaronDestructo').data.id
+print("Starting script...")  # This will show in logs
+bearer_token = os.getenv('AAAAAAAAAAAAAAAAAAAAAOio5gEAAAAAEzwCsA%2B74hk81TVueBsSNW%2Bwa%2Fo%3D7GyzbyCZHwJHSpwu90eqQjkoyRdqDLBSATAHVCpnEJw35AzXp4')
+if not bearer_token:
+    print("ERROR: No BEARER_TOKEN env var!")
+    exit(1)
+discord_webhook = os.getenv('https://discord.com/api/webhooks/1443599784324890655/ps20oZhs-k7O5Qs7g5HLpaArSokeSzE2ftVZS4rLi8CKF2thpeGrH1_tgZUe_lR2vIQ6')
+if not discord_webhook:
+    print("ERROR: No DISCORD_WEBHOOK env var!")
+    exit(1)
+
+client = tweepy.Client(bearer_token=bearer_token)
+# Get user ID (hardcode or env var for now)
+username = 'BaronDestructo'  # Change to your target
+user = client.get_user(username=username)
+if not user.data:
+    print("ERROR: Invalid username!")
+    exit(1)
+user_id = user.data.id
+print(f"Monitoring user ID: {user_id}")
 
 last_tweet_id = None
 while True:
-    tweets = client.get_users_tweets(user_id, max_results=5, since_id=last_tweet_id)
-    for tweet in reversed(tweets.data):  # Newest first
-        payload = {'content': f"New tweet: {tweet.text}\nhttps://x.com/exampleuser/status/{tweet.id}"}
-        requests.post(discord_webhook, json=payload)
-        last_tweet_id = tweet.id
-    time.sleep(60)  # Poll every minute
+    try:
+        tweets = client.get_users_tweets(user_id, max_results=5, since_id=last_tweet_id)
+        if tweets.data:
+            for tweet in reversed(tweets.data):
+                payload = {
+                    'content': f"New tweet: {tweet.text}\nhttps://x.com/{username}/status/{tweet.id}"
+                }
+                response = requests.post(discord_webhook, json=payload)
+                print(f"Posted tweet {tweet.id}: {response.status_code}")
+                last_tweet_id = tweet.id
+        time.sleep(60)  # Poll every minute
+    except Exception as e:
+        print(f"Error: {e}")
+        time.sleep(60)
