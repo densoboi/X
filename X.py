@@ -3,7 +3,7 @@ import tweepy
 import requests
 import time
 
-print("Starting script...")  # This will show in logs
+print("Starting script...")
 bearer_token = os.getenv('AAAAAAAAAAAAAAAAAAAAAOio5gEAAAAAEzwCsA%2B74hk81TVueBsSNW%2Bwa%2Fo%3D7GyzbyCZHwJHSpwu90eqQjkoyRdqDLBSATAHVCpnEJw35AzXp4')
 if not bearer_token:
     print("ERROR: No BEARER_TOKEN env var!")
@@ -28,13 +28,15 @@ while True:
     try:
         tweets = client.get_users_tweets(user_id, max_results=5, since_id=last_tweet_id)
         if tweets.data:
-            for tweet in reversed(tweets.data):
+            for tweet in reversed(tweets.data):  # Process newest first
                 payload = {
                     'content': f"New tweet: {tweet.text}\nhttps://x.com/{username}/status/{tweet.id}"
                 }
                 response = requests.post(discord_webhook, json=payload)
                 print(f"Posted tweet {tweet.id}: {response.status_code}")
                 last_tweet_id = tweet.id
+        else:
+            print("No new tweets found.")
         time.sleep(60)  # Poll every minute
     except Exception as e:
         print(f"Error: {e}")
