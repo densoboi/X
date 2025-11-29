@@ -32,7 +32,7 @@ else:
 if bearer_token and discord_webhook:
     print("SUCCESS: Vars loaded! Running X client...")
     client = tweepy.Client(bearer_token=bearer_token)
-    username = 'BaronDestructo'
+    username = 'Madbaronx'
     try:
         user = client.get_user(username=username)
         if user.data:
