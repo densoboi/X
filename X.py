@@ -4,7 +4,7 @@ import requests
 import time
 
 print("Starting script...")
-bearer_token = os.getenv('AAAAAAAAAAAAAAAAAAAAAOio5gEAAAAAEzwCsA%2B74hk81TVueBsSNW%2Bwa%2Fo%3D7GyzbyCZHwJHSpwu90eqQjkoyRdqDLBSATAHVCpnEJw35AzXp4')
+bearer_token = os.getenv('AAAAAAAAAAAAAAAAAAAAAOio5gEAAAAA5FAa3ewskh%2BoOniZjhu80Nr3Qug%3DgVFjwVMdjg80Bi7UgAQT1zNWbWm8jN5fdd9tlwHThMwphghYcF')
 if not bearer_token:
     print("ERROR: No BEARER_TOKEN env var!")
     exit(1)
