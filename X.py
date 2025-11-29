@@ -4,49 +4,49 @@ import requests
 import time
 
 print("Starting script...")
-print(f"Python version: {os.sys.version}")  # Extra debug
-print(f"Number of env vars loaded: {len(os.environ)}")  # Should be 10+
-
-# List ALL env var keys (sorted for ease)
-print("=== ALL ENVIRONMENT VARIABLES (KEYS ONLY) ===")
-for key in sorted(os.environ.keys()):
-    print(f"- {key}")
-
-# Specific var checks with partial values (for security)
 bearer_token = os.getenv('BEARER_TOKEN')
-print("\n=== SPECIFIC VARS DEBUG ===")
-print(f"BEARER_TOKEN exists? {bearer_token is not None}")
-if bearer_token:
-    print(f"BEARER_TOKEN preview: {bearer_token[:20]}... (length: {len(bearer_token)})")
-else:
-    print("BEARER_TOKEN: MISSING")
-
+if not bearer_token:
+    print("ERROR: No BEARER_TOKEN env var!")
+    exit(1)
 discord_webhook = os.getenv('DISCORD_WEBHOOK')
-print(f"DISCORD_WEBHOOK exists? {discord_webhook is not None}")
-if discord_webhook:
-    print(f"DISCORD_WEBHOOK preview: {discord_webhook[:30]}... (length: {len(discord_webhook)})")
-else:
-    print("DISCORD_WEBHOOK: MISSING")
-
-# If vars are good, proceed (comment out below for full run)
-if bearer_token and discord_webhook:
-    print("SUCCESS: Vars loaded! Running X client...")
-    client = tweepy.Client(bearer_token=bearer_token)
-    username = 'lousahfur'
-    try:
-        user = client.get_user(username=username)
-        if user.data:
-            user_id = user.data.id
-            print(f"User ID: {user_id} – API works!")
-        else:
-            print("API call failed – token issue?")
-    except Exception as api_err:
-        print(f"API Error: {api_err}")
-else:
-    print("Halting due to missing vars.")
+if not discord_webhook:
+    print("ERROR: No DISCORD_WEBHOOK env var!")
     exit(1)
 
-# Uncomment below for full loop once fixed
-# last_tweet_id = None
-# while True:
-#     ... (your loop code)
+client = tweepy.Client(bearer_token=bearer_token)
+username = 'LouSahFur'  # Your target
+user = client.get_user(username=username)
+if not user.data:
+    print("ERROR: Invalid username!")
+    exit(1)
+user_id = user.data.id
+print(f"Monitoring user ID: {user_id} for @{username}")
+
+last_tweet_id = None
+poll_count = 0
+while True:
+    poll_count += 1
+    print(f"\n--- Poll #{poll_count} at {time.strftime('%Y-%m-%d %H:%M:%S')} ---")
+    try:
+        tweets = client.get_users_tweets(user_id, max_results=5, since_id=last_tweet_id)
+        print(f"Fetched {len(tweets.data) if tweets.data else 0} tweets.")
+        if tweets.data:
+            for tweet in reversed(tweets.data):  # Newest first
+                print(f"Fetched tweet {tweet.id}: {tweet.text[:50]}...")  # Preview
+                payload = {
+                    'content': f"New tweet from @{username}: {tweet.text}\nhttps://x.com/{username}/status/{tweet.id}"
+                }
+                response = requests.post(discord_webhook, json=payload)
+                print(f"Discord post for {tweet.id}: Status {response.status_code} | Response: {response.text[:100]}...")
+                if response.status_code == 204:  # Discord success
+                    print(f"✅ Successfully posted {tweet.id}")
+                else:
+                    print(f"❌ Discord failed for {tweet.id}")
+                last_tweet_id = tweet.id
+        else:
+            print("No new tweets found.")
+        print(f"Next poll in 60s...")
+        time.sleep(60)
+    except Exception as e:
+        print(f"❌ Poll error: {type(e).__name__}: {e}")
+        time.sleep(60)
